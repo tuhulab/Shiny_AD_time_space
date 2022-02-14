@@ -54,11 +54,12 @@ ui <- navbarPage("AD in Time and Space",
                               sidebarPanel("",
                                   checkboxGroupInput("gene_to_plot_duplicate",
                                                      "Choose the genes to plot:",
-                                                     choices = readRDS("../data/bioreplicate_t.rds")$feature %>% unique,
-                                                     selected = readRDS("../data/bioreplicate_t.rds")$feature %>% head(5))
+                                                     choices = readRDS("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/bioreplicate_t.rds")$feature %>% unique,
+                                                     selected = readRDS("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/bioreplicate_t.rds")$feature %>% head(5))
                                            ),
                               mainPanel(
-                                plotOutput("bioreplicate_g", height = paste0(800,"px"))
+                                # plotOutput("bioreplicate_g", height = paste0(800, "px"))
+                                uiOutput("bioreplicate.ui")
                               )
                             )
                           )), # Figure S3
@@ -69,7 +70,7 @@ ui <- navbarPage("AD in Time and Space",
                                            checkboxGroupInput(
                                              "subject_to_plot",
                                              "Choose the subject IDs to plot:",
-                                             choices = readr::read_rds("../data/cell_type_deconvolution.rds") %>% pull(subject) %>% unique(),
+                                             choices = readr::read_rds("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/cell_type_deconvolution.rds") %>% pull(subject) %>% unique(),
                                              selected = c("AD_02", "AD_06")
                                            )),
                               mainPanel(
@@ -132,7 +133,7 @@ ui <- navbarPage("AD in Time and Space",
 # Define server logic ----
 server <- function(input, output) {
   output$vp_table <- DT::renderDataTable({
-    readr::read_csv("../data/table_s4.csv") %>%
+    readr::read_csv("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/table_s4.csv") %>%
       dplyr::select(-1) %>%
       arrange(-`tissue type (LS/NL/HC)`) %>%
       DT::datatable(rownames = FALSE, options = list(pageLength = 30)) %>%
@@ -141,14 +142,14 @@ server <- function(input, output) {
 
   output$ad_signature_table <-
     DT::renderDataTable({
-      readr::read_csv("../data/table_s2.csv") %>%
+      readr::read_csv("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/table_s2.csv") %>%
         DT::datatable(rownames = FALSE, options = list(pageLength = 30)) %>%
         formatRound(2:4, digits = 3) %>%
         formatSignif(5:6)
     })
 
   output$gsea_table_reactome <- DT::renderDataTable({
-    readRDS("../data/gsea_res.rds") %>%
+    readRDS("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/gsea_res.rds") %>%
       filter(gs == "REACTOME") %>%
       pull(data) %>% reduce(~ .x[[1]]) %>%
       filter(parameter == input$gsea_res_parameter) %>%
@@ -162,7 +163,7 @@ server <- function(input, output) {
     })
 
   output$gsea_table_tft <- DT::renderDataTable({
-    readRDS("../data/gsea_res.rds") %>%
+    readRDS("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/gsea_res.rds") %>%
       filter(gs == "TFT") %>%
       pull(data) %>% reduce(~ .x[[1]]) %>%
       filter(parameter == input$gsea_res_parameter) %>%
@@ -176,7 +177,7 @@ server <- function(input, output) {
   })
 
   output$gsea_table_bp <- DT::renderDataTable({
-    readRDS("../data/gsea_res.rds") %>%
+    readRDS("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/gsea_res.rds") %>%
       filter(gs == "BP") %>%
       pull(data) %>% reduce(~ .x[[1]]) %>%
       filter(parameter == input$gsea_res_parameter) %>%
@@ -190,7 +191,7 @@ server <- function(input, output) {
   })
 
   output$gsea_table_mf <- DT::renderDataTable({
-    readRDS("../data/gsea_res.rds") %>%
+    readRDS("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/gsea_res.rds") %>%
       filter(gs == "MF") %>%
       pull(data) %>% reduce(~ .x[[1]]) %>%
       filter(parameter == input$gsea_res_parameter) %>%
@@ -204,7 +205,7 @@ server <- function(input, output) {
   })
 
   output$space_anatomic_region <- DT::renderDataTable({
-    readr::read_csv("../data/table_s5.csv") %>%
+    readr::read_csv("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/gsea_res.rds") %>%
       DT::datatable(rownames = FALSE, options = list(pageLength = 30)) %>%
       formatRound(4:6, digits = 3) %>%
       formatSignif(7:8)
@@ -212,29 +213,48 @@ server <- function(input, output) {
 
   output$bioreplicate_g <-
     renderPlot(
-      readr::read_rds("../data/bioreplicate_t.rds") %>%
-        select(biological_rep_id,
-               subject, visit, skin_type, feature,
-               counts_scaled, replicate_ID) %>%
-        filter(feature %in% input$gene_to_plot_duplicate) %>%
-        ggplot(aes(x = replicate_ID,
-                   y = counts_scaled,
-                   group = biological_rep_id)) +
-        geom_point(aes(color = skin_type)) +
-        facet_grid(feature ~ skin_type, scales = "free") +
-        geom_line(aes(color = skin_type), alpha = .5) +
-        geom_boxplot(aes(group = replicate_ID, fill = skin_type), alpha = .5) +
-        scale_color_manual(values = c("LS" = "#eb2d0c", "NL" = "#eb8b9b", "HC" = "#91cf60")) +
-        scale_fill_manual(values = c("LS" = "#eb2d0c", "NL" = "#eb8b9b", "HC" = "#91cf60")) +
-        scale_y_continuous(trans = "log2") +
-        xlab("replicate") +
-        theme(axis.title.y = element_blank())
+      {
+        t <-
+          readr::read_rds("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/bioreplicate_t.rds") %>%
+          select(biological_rep_id,
+                 subject, visit, skin_type, feature,
+                 counts_scaled, replicate_ID) %>%
+          arrange(biological_rep_id) %>%
+          mutate(counts_scaled = counts_scaled + 1) %>%
+          filter(feature %in% input$gene_to_plot_duplicate)  #, "CCL18", "IL10", "IL22"
+
+        stat_test <-
+          t %>% group_by(feature, skin_type) %>%
+          t_test(counts_scaled ~ replicate_ID, paired = T) %>%
+          add_significance() %>%
+          add_xy_position(x = "replicate_ID",
+                          y.trans = log2, step.increase = .08) %>%
+          group_by(feature) %>% mutate(y.position = max(y.position)) %>%
+          ungroup()
+
+          t %>%
+          pivot_wider(names_from = replicate_ID, values_from = counts_scaled) %>%
+          ggpaired(cond1 = "01", cond2 = "02", y = "counts_scaled",
+                   xlab = "Biological replicate",
+                   ylab = "",
+                   line.color = "grey", line.size = .4,
+                   fill = "skin_type",
+                   palette = c("LS" = "#eb2d0c", "NL" = "#eb8b9b", "HC" = "#91cf60")) %>%
+          facet(facet.by = c("feature", "skin_type"), scales = "free_y") +
+          stat_pvalue_manual(stat_test, label = "p") +
+          scale_y_continuous(trans = "log2", expand = expansion(mult = c(.05, .1)))
+        }
       # res = 96
     )
 
+  output$bioreplicate.ui <- renderUI(
+    {plotOutput("bioreplicate_g", width = "100%",
+                height = paste0(200*length(input$gene_to_plot_duplicate), "px"))}
+  )
+
   output$cell_type_variation_g <-
     renderPlot(
-      readr::read_rds("../data/cell_type_deconvolution.rds") %>%
+      readr::read_rds("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/cell_type_deconvolution.rds") %>%
         filter(subject %in% input$subject_to_plot) %>%
         ggbarplot(x = "plot_name", y = "prop", fill = "cell_type",
                   xlab = "Sample", ylab = "Proportion(%)", palette = "npg") %>%
@@ -246,7 +266,7 @@ server <- function(input, output) {
   output$heatmap_linc <-
     renderImage({
       list(
-        src = file.path("../data/figure_s5.jpg"),
+        src = file.path("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/figure_s5.jpg"),
         contentType = "image/jpg",
         width = 1000
       )
@@ -254,7 +274,7 @@ server <- function(input, output) {
 
   output$time_variation_g <-
     renderPlot(
-      readr::read_rds("../data/time_variation_t.rds") %>%
+      readr::read_rds("https://rawcdn.githack.com/tuhulab/Shiny_AD_time_space/4958031877b87194aa5bc4655cc1e897bac3417a/data/time_variation_t.rds") %>%
         filter(skin_type == input$skin_type,
                time_type == input$time) %>%
         pull(d) %>% reduce(~.x) %>%
