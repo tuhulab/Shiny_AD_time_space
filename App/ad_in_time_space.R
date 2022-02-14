@@ -12,7 +12,7 @@ ui <- navbarPage("AD in Time and Space",
                           h3("Download"),
                           downloadLink("TimeVariation_download", label = "Time variation data"),
                           br(),
-                          downloadLink("SpaceVariation_download", label = "Space variation (biological replicate) data"),
+                          downloadLink("SpaceVariation_bioreplicate_download", label = "Space variation (biological replicate) data"), # if two widgets get same name. it will not work without a warning message
                           br(),
                           downloadLink("CellTypeVariation_download", label = "Cell type variation data"),
                           br(),
@@ -24,7 +24,8 @@ ui <- navbarPage("AD in Time and Space",
                           br(),
                           downloadLink("variancePartition_download", label = "Variance Parition data"),
                           br(),
-                          downloadLink("SpaceVariation_download", label = "Space variation (anatomic region) data")),
+                          downloadLink("SpaceVariation_download", label = "Space variation (anatomic region) data"),
+                          br()),
                  tabPanel("Time variation", # Figure S2
                           fluidPage(
                             sidebarLayout(
