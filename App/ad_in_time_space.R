@@ -5,29 +5,41 @@ library(ggpubr)
 library(purrr)
 library(rstatix)
 library(tidyr)
-
+library(ComplexHeatmap)
 
 # Define UI ----
 ui <- navbarPage("AD in Time and Space",
                  tabPanel("Introduction",
                           p("This web interface facilitaes the readers to interact with and download the data published on Hu. et al, Journal of Investigative Dermatology"),
-                          h3("Download"),
-                          downloadLink("TimeVariation_download", label = "Time variation data"),
+
+                          h2("Download data"),
+
+                          h4("Raw data:"),
+                          tags$a(href = "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE193309", "Raw data is deposited on GEO (GSE193309)"),
                           br(),
-                          downloadLink("SpaceVariation_bioreplicate_download", label = "Space variation (biological replicate) data"), # if two widgets get same name. it will not work without a warning message
+
+                          h4("Data analysis results (models):"),
+                          tags$a(href = "https://doi.org/10.5281/zenodo.5827799", "The reproducible data analysis pipelines is indexed on Zenodo"),
                           br(),
-                          downloadLink("CellTypeVariation_download", label = "Cell type variation data"),
+                          tags$a(href = "https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/time_variation_t.rds", "Time variation data (.rds)"),
                           br(),
-                          downloadLink("LINCRNA_download", label = "LINC RNA expression data"),
+                          tags$a(href = "https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/bioreplicate_t.rds", "Space variation (biological replicate) data (.rds)"),
                           br(),
-                          downloadLink("ADSignatureGene_download", label = "AD signature gene data"),
+                          tags$a(href = "https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/cell_type_deconvolution.rds", "Cell type variation data (.rds)"),
                           br(),
-                          downloadLink("GSEAResult_download", label = "GSEA result data"),
+                          tags$a(href = "https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/figure_s5.jpg", "LINC RNA expression"),
                           br(),
-                          downloadLink("variancePartition_download", label = "Variance Parition data"),
+                          tags$a(href = "https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/table_s2.csv", "AD signature gene (.csv)"),
                           br(),
-                          downloadLink("SpaceVariation_download", label = "Space variation (anatomic region) data"),
-                          br()),
+                          tags$a(href = "https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/gsea_res.rds", "GSEA result (.rds)"),
+                          br(),
+                          tags$a(href = "https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/table_s4.csv", "variance Parition result (.csv)"),
+                          br(),
+                          tags$a(href = "https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/table_s5.csv", "Space variation (anatomic region) data (.csv)"),
+                          br(),
+                          h3("Contact"),
+                          p("Questions regarding the usage of the web application and the data should be addressed to Tu Hu (UYHDK AT leo-pharma DOT com)")
+                          ),
                  tabPanel("Time variation", # Figure S2
                           fluidPage(
                             sidebarLayout(
@@ -46,11 +58,12 @@ ui <- navbarPage("AD in Time and Space",
                                            )
                                            ),
                               mainPanel(
-                                plotOutput("time_variation_g", width = "100%", height = "800px")
+                                # plotOutput("time_variation_g", width = "100%", height = "800px")
+                                uiOutput("timevariation.ui")
                               )
                             )
                           )),
-                 tabPanel("Space variation (duplicate)",
+                 tabPanel("Space variation (biological replicate)",
                           fluidPage(
                             sidebarLayout(
                               sidebarPanel("",
@@ -60,7 +73,6 @@ ui <- navbarPage("AD in Time and Space",
                                                      selected = readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/bioreplicate_t.rds"))$feature %>% head(5))
                                            ),
                               mainPanel(
-                                # plotOutput("bioreplicate_g", height = paste0(800, "px"))
                                 uiOutput("bioreplicate.ui")
                               )
                             )
@@ -76,7 +88,9 @@ ui <- navbarPage("AD in Time and Space",
                                              selected = c("AD_02", "AD_06")
                                            )),
                               mainPanel(
-                                plotOutput("cell_type_variation_g", height = "800px")
+                                # plotOutput("cell_type_variation_g", height = "800px")
+                                uiOutput("celltypevariation.ui")
+
                               )
                             )
                           )), # Figure S4
@@ -260,35 +274,58 @@ server <- function(input, output) {
         filter(subject %in% input$subject_to_plot) %>%
         ggbarplot(x = "plot_name", y = "prop", fill = "cell_type",
                   xlab = "Sample", ylab = "Proportion(%)", palette = "npg") %>%
-        facet(facet.by = "subject", scales = "free") %>%
+        facet(facet.by = "subject", scales = "free", ncol = 2) %>%
         ggpar(xtickslab.rt = 90, font.tickslab = 6)
       # res = 96
     )
 
+  output$celltypevariation.ui <- renderUI(
+    {plotOutput("cell_type_variation_g", width = "100%",
+                height = paste0(300*round( (length(input$subject_to_plot) + .01)/2), "px"))}
+  )
+
   output$heatmap_linc <-
-    renderImage({
-      list(
-        src = file.path(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/figure_s5.jpg")),
-        contentType = "image/jpg",
-        width = 1000
-      )
-    }, deleteFile = F)
+    renderPlot(
+      ComplexHeatmap::draw(readRDS(
+        url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/heatmap_linc.rds")), heatmap_legend_side = "right",
+                           annotation_legend_side = "top", merge_legend = FALSE), height = 1500
+    )
+
+    # renderImage({
+    #   list(
+    #     src = file.path(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/figure_s5.jpg")),
+    #     contentType = "image/jpg",
+    #     width = 1000
+    #   )
+    # }, deleteFile = F)
 
   output$time_variation_g <-
     renderPlot(
       readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/time_variation_t.rds")) %>%
-        filter(skin_type == input$skin_type,
-               time_type == input$time) %>%
+        filter(skin_type == input$skin_type, time_type == input$time) %>%
         pull(d) %>% reduce(~.x) %>%
         ggboxplot(x = ifelse(input$time == "quarter", "visit_quarter", "visit"),
                   y = "counts_scaled",
-                  add = "jitter",
+                  add = "jitter", add.params = list(alpha = .5),
                   facet.by = "feature",
                   ylab = FALSE,
                   yscale = "log10",
-                  scales = "free")
-
+                  scales = "free",
+                  ncol = 3)
     )
+  output$timevariation.ui <- renderUI(
+    {plotOutput("time_variation_g",
+                width = ifelse(input$time == "quarter" & input$skin_type == "HC", "50%", "100%"),
+                paste0(case_when(input$time == "quarter" & input$skin_type == "LS" ~ 33,
+                                 input$time == "quarter" & input$skin_type == "NL" ~ 3,
+                                 input$time == "quarter" & input$skin_type == "HC" ~ 1.3,
+                                 input$time == "visit" & input$skin_type == "LS" ~ 12,
+                                 input$time == "visit" & input$skin_type == "NL" ~ 24,
+                                 input$time == "visit" & input$skin_type == "HC" ~ 8)*200,
+                       "px")
+                )}
+                # height = paste0(200*5, "px"))}
+  )
 }
 
 # Run the app ----
