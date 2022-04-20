@@ -6,6 +6,9 @@ library(purrr)
 library(rstatix)
 library(tidyr)
 library(ComplexHeatmap)
+library(BiocManager)
+library(tidySummarizedExperiment)
+options(repos = BiocManager::repositories())
 
 # Define UI ----
 ui <- navbarPage("AD in Time and Space",
@@ -43,7 +46,7 @@ ui <- navbarPage("AD in Time and Space",
                  tabPanel("Time variation", # Figure S2
                           fluidPage(
                             sidebarLayout(
-                              sidebarPanel("",
+                              sidebarPanel(h5("Boxplot showing time-specific DEGs. It appears that the differential expression is driven by a few high-count samples."),
                                            radioButtons(
                                              "time", h4("Choose how to visualize time:"),
                                              choices = list("quarter (absolute time)" = "quarter",
@@ -66,7 +69,8 @@ ui <- navbarPage("AD in Time and Space",
                  tabPanel("Space variation (biological replicate)",
                           fluidPage(
                             sidebarLayout(
-                              sidebarPanel("",
+                              sidebarPanel(
+                                  h5("Boxplot showing gene expression for selected AD biomarkers from biological replicates. The biological replicate pairs, which were taken from the same anatomical region from the same subject at the same time point, are connected by lines. Although the group means are similar, the gene expression from two biological replicates shows considerable variation."),
                                   checkboxGroupInput("gene_to_plot_duplicate",
                                                      "Choose the genes to plot:",
                                                      choices = readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/bioreplicate_t.rds"))$feature %>% unique,
@@ -80,7 +84,7 @@ ui <- navbarPage("AD in Time and Space",
                  tabPanel("Cell type variation",
                           fluidPage(
                             sidebarLayout(
-                              sidebarPanel("",
+                              sidebarPanel(h5("The inferred cell composition for each sample. Each bar represents the proportion (%) of cell composition, as estimated by MuSiC (Multi-Subject Single Cell deconvolution) using GSE147424 (He et al. 2020) single-cell data as the reference."),
                                            checkboxGroupInput(
                                              "subject_to_plot",
                                              "Choose the subject IDs to plot:",
@@ -98,9 +102,10 @@ ui <- navbarPage("AD in Time and Space",
                           basicPage(
                             h2("Heatmap for LINC RNA"),
                             br(),
+                            h5("Heatmap showing 177 differentially expressed lincRNAs between skin conditions."),
                             imageOutput("heatmap_linc")
                           )), # Figure S5
-                 tabPanel("AD signature gene",
+                 tabPanel("",
                           basicPage(
                             h2("AD signature gene"),
                             p("AD signature gene"),
@@ -130,7 +135,7 @@ ui <- navbarPage("AD in Time and Space",
                             )
                           )
                           ), # Table S3
-                 tabPanel("varianceParition",
+                 tabPanel("Variance Partition",
                           basicPage(
                             h2("VP results"),
                             p("variance parition results for each gene"),
@@ -143,7 +148,34 @@ ui <- navbarPage("AD in Time and Space",
                             h2("Anatomic region variation"),
                             br(),
                             DT::dataTableOutput("space_anatomic_region")
-                          )) # Table S5)
+                          )), # Table S5)
+                 tabPanel("Theoritical calculation of RNA conc.",
+                          basicPage(
+                            h4("Theoretical calculation of RNA concentration from different biopsy diameters"),
+                            tableOutput("RNA_conc_kable")
+                          )),
+                 tabPanel("Cell composition (GSE121212 and GENAD)",
+                          basicPage(
+                            p("Cell composition of different skin types (HC/NL/LS) for",
+                              "the",
+                              strong("GSE121212"),
+                              "and",
+                              strong("GENAD"),
+                              "study inferred by",
+                              em("in silico"),
+                              "cell sorting analysis"),
+                          DT::dataTableOutput("table_cell_composition_gse121212_genad"))
+                          ),
+                 tabPanel("Tissue injury gene expression",
+                          basicPage(
+                            p("Longitudinal (visit) variation of gene expression for MGST1, MUC1, PTGS2, and SAA2"),
+                            imageOutput("tissue_injury_g")
+                          )),
+                 tabPanel("Subcutis gene expression",
+                          basicPage(
+                            p("Longitudinal (visit) variation of gene expression for CIDEC, FABP4, and PLIN4"),
+                            imageOutput("subcuits_g")
+                          )),
 )
 
 # Define server logic ----
@@ -326,6 +358,45 @@ server <- function(input, output) {
                 )}
                 # height = paste0(200*5, "px"))}
   )
+  output$RNA_conc_kable <- function(){
+    readr::read_csv("../data/table_theo_calc_RNA_conc.csv") %>%
+      knitr::kable("html") %>%
+      kableExtra::kable_styling("striped", full_width = F) %>%
+      kableExtra::add_footnote("Tsoi et al. 2019 has reported that from a 5 mm punch biopsy, 50 ng/uL RNA can be obtained for high quality sequencing.")
+  }
+  output$table_cell_composition_gse121212_genad <-
+    DT::renderDataTable({
+      readr::read_csv("../data/table_cell_composition_gse121212_genad.csv") %>%
+      DT::datatable(rownames = FALSE)
+      })
+
+  output$tissue_injury_g <-
+    renderPlot(
+      readRDS("../data/tissue_injury_se_t.rds") %>%
+        ggline(x = "visit",
+               y = "counts_scaled",
+               facet.by = "feature",
+               add = c("mean", "dotplot"),
+               color = "skin_type",
+               palette = c("LS" = "#eb2d0c", "NL" = "#eb8b9b", "HC" = "#91cf60"),
+               xlab = "Visit",
+               ylab = "Counts") %>%
+        ggpar(yscale = "log10")
+    )
+
+  output$subcuits_g <-
+    renderPlot(
+      readRDS("../data/subcutis_se_t.rds") %>%
+        ggline(x = "visit",
+               y = "counts_scaled",
+               facet.by = "feature",
+               add = c("mean", "dotplot"),
+               color = "skin_type",
+               palette = c("LS" = "#eb2d0c", "NL" = "#eb8b9b", "HC" = "#91cf60"),
+               xlab = "Visit",
+               ylab = "Counts") %>%
+        ggpar(yscale = "log10")
+    )
 }
 
 # Run the app ----
