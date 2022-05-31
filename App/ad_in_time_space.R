@@ -362,20 +362,20 @@ server <- function(input, output) {
                 # height = paste0(200*5, "px"))}
   )
   output$RNA_conc_kable <- function(){
-    readr::read_csv("../data/table_theo_calc_RNA_conc.csv") %>%
+    readr::read_csv(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/table_theo_calc_RNA_conc.csv")) %>%
       knitr::kable("html") %>%
       kableExtra::kable_styling("striped", full_width = F) %>%
       kableExtra::add_footnote("Tsoi et al. 2019 has reported that from a 5 mm punch biopsy, 50 ng/uL RNA can be obtained for high quality sequencing.")
   }
   output$table_cell_composition_gse121212_genad <-
     DT::renderDataTable({
-      readr::read_csv("../data/table_cell_composition_gse121212_genad.csv") %>%
+      readr::read_csv(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/table_cell_composition_gse121212_genad.csv")) %>%
       DT::datatable(rownames = FALSE)
       })
 
   output$tissue_injury_g <-
     renderPlot(
-      readRDS("../data/tissue_injury_se_t.rds") %>%
+      readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/tissue_injury_se_t.rds")) %>%
         ggline(x = "visit",
                y = "counts_scaled",
                facet.by = "feature",
@@ -389,7 +389,7 @@ server <- function(input, output) {
 
   output$subcuits_g <-
     renderPlot(
-      readRDS("../data/subcutis_se_t.rds") %>%
+      readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/subcutis_se_t.rds")) %>%
         ggline(x = "visit",
                y = "counts_scaled",
                facet.by = "feature",
