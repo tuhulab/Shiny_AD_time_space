@@ -8,12 +8,15 @@ library(tidyr)
 library(ComplexHeatmap)
 library(BiocManager)
 library(tidySummarizedExperiment)
-options(repos = BiocManager::repositories())
+# options(repos = BiocManager::repositories())
+# Sys.setenv(CMAKE_BIN="/usr/bin/cmake3")
 
 # Define UI ----
 ui <- navbarPage("AD in Time and Space",
                  tabPanel("Introduction",
-                          p("This web interface facilitaes the readers to interact with and download the data published on Hu. et al, Journal of Investigative Dermatology"),
+                          p("This web interface facilitaes the readers to interact with and download the data published on Hu. et al,
+                          Assessment of Spatial and Temporal Variation in the Skin Transcriptome of Atopic Dermatitis by Use of 1.5 mm Mini Punch Biopsies,
+                            Journal of Investigative Dermatology (in press)"),
 
                           h2("Download data"),
 
@@ -199,7 +202,7 @@ server <- function(input, output) {
   output$gsea_table_reactome <- DT::renderDataTable({
     readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/gsea_res.rds")) %>%
       filter(gs == "REACTOME") %>%
-      pull(data) %>% reduce(~ .x[[1]]) %>%
+      pull(data) %>% purrr::reduce(~ .x[[1]]) %>%
       filter(parameter == input$gsea_res_parameter) %>%
       select(-parameter) %>%
       DT::datatable(rownames = FALSE, escape = F,
@@ -213,7 +216,7 @@ server <- function(input, output) {
   output$gsea_table_tft <- DT::renderDataTable({
     readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/gsea_res.rds")) %>%
       filter(gs == "TFT") %>%
-      pull(data) %>% reduce(~ .x[[1]]) %>%
+      pull(data) %>% purrr::reduce(~ .x[[1]]) %>%
       filter(parameter == input$gsea_res_parameter) %>%
       select(-parameter) %>%
       DT::datatable(rownames = FALSE, escape = F,
@@ -227,7 +230,7 @@ server <- function(input, output) {
   output$gsea_table_bp <- DT::renderDataTable({
     readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/gsea_res.rds")) %>%
       filter(gs == "BP") %>%
-      pull(data) %>% reduce(~ .x[[1]]) %>%
+      pull(data) %>% purrr::reduce(~ .x[[1]]) %>%
       filter(parameter == input$gsea_res_parameter) %>%
       select(-parameter) %>%
       DT::datatable(rownames = FALSE, escape = F,
@@ -241,7 +244,7 @@ server <- function(input, output) {
   output$gsea_table_mf <- DT::renderDataTable({
     readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/gsea_res.rds")) %>%
       filter(gs == "MF") %>%
-      pull(data) %>% reduce(~ .x[[1]]) %>%
+      pull(data) %>% purrr::reduce(~ .x[[1]]) %>%
       filter(parameter == input$gsea_res_parameter) %>%
       select(-parameter) %>%
       DT::datatable(rownames = FALSE, escape = F,
@@ -335,7 +338,7 @@ server <- function(input, output) {
     renderPlot(
       readRDS(url("https://cdn.jsdelivr.net/gh/tuhulab/Shiny_AD_time_space@master/data/time_variation_t.rds")) %>%
         filter(skin_type == input$skin_type, time_type == input$time) %>%
-        pull(d) %>% reduce(~.x) %>%
+        pull(d) %>% purrr::reduce(~.x) %>%
         ggboxplot(x = ifelse(input$time == "quarter", "visit_quarter", "visit"),
                   y = "counts_scaled",
                   add = "jitter", add.params = list(alpha = .5),
