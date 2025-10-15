@@ -2,3 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
+*.Rproj.user/
+.httr-oauth
+.DS_Store
+*.log
+*.csv~
+*.rds~
+CODE_QUALITY.txt
+renv/
+.Rprofile
