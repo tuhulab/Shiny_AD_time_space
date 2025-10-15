@@ -1,0 +1,93 @@
+# Suggested GitHub Actions Workflow
+# This file contains a suggested CI/CD workflow for GitHub Actions
+# To use: Create .github/workflows/ci.yml with this content
+
+name: R Package CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up R
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: '4.2.0'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+    
+    - name: Install R dependencies
+      run: |
+        Rscript -e "source('install_dependencies.R')"
+    
+    - name: Run tests
+      run: |
+        Rscript -e "source('test_app.R')"
+    
+    - name: Check code quality
+      run: |
+        Rscript -e "source('check_code_quality.R')"
+    
+    - name: Upload code quality report
+      uses: actions/upload-artifact@v3
+      with:
+        name: code-quality-report
+        path: CODE_QUALITY.txt
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up R
+      uses: r-lib/actions/setup-r@v2
+    
+    - name: Install lintr
+      run: |
+        Rscript -e "install.packages('lintr')"
+    
+    - name: Lint R code
+      run: |
+        Rscript -e "lintr::lint_dir('App')"
+
+# Optional: Deploy to shinyapps.io
+#  deploy:
+#    runs-on: ubuntu-latest
+#    needs: [test, lint]
+#    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+#    
+#    steps:
+#    - uses: actions/checkout@v3
+#    
+#    - name: Set up R
+#      uses: r-lib/actions/setup-r@v2
+#    
+#    - name: Install rsconnect
+#      run: |
+#        Rscript -e "install.packages('rsconnect')"
+#    
+#    - name: Deploy to shinyapps.io
+#      env:
+#        SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
+#        SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
+#      run: |
+#        Rscript -e "
+#          rsconnect::setAccountInfo(
+#            name='your-account',
+#            token=Sys.getenv('SHINYAPPS_TOKEN'),
+#            secret=Sys.getenv('SHINYAPPS_SECRET')
+#          )
+#          rsconnect::deployApp(appDir='App')
+#        "
